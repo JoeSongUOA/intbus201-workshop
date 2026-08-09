@@ -642,11 +642,13 @@ if (WEEK_CONFIG.finalTask) {
   finalSection.innerHTML = `
     <div class="cloud-label" style="color:#9B6AFF">Task ${WEEK_CONFIG.finalTask} — Decisive evidence by position</div>
     <div style="display:flex;flex-direction:column;gap:8px;" id="cloud-final-wrap">
-      ${WEEK_CONFIG.finalTaskPositions.map((pos, i) => `
-        <div>
-          <div class="cloud-sublabel" style="color:${CLOUD_ACCENT_COLORS[i] || '#fff'}">Position ${String.fromCharCode(65+i)} — ${pos}</div>
+      ${WEEK_CONFIG.finalTaskPositions.map((pos, i) => {
+        const shortPos = WEEK_CONFIG.finalTaskShortPositions?.[i] || (pos.indexOf(':') > -1 ? pos.substring(0, pos.indexOf(':')).trim() : pos);
+        return `<div>
+          <div class="cloud-sublabel" style="color:${CLOUD_ACCENT_COLORS[i] || '#fff'}">Position ${String.fromCharCode(65+i)} — ${shortPos}</div>
           <div class="tfidf-cloud" id="cloud-final-${i}"><span class="cloud-empty">No submissions yet</span></div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
     </div>
   `;
   colClouds.insertBefore(finalSection, hr0);
@@ -759,7 +761,13 @@ function renderStances(data, groups) {
     el.innerHTML = cfg.options.map((opt, i) => {
       const n   = counts[opt] || 0;
       const pct = total > 0 ? Math.round((n / total) * 100) : 0;
-      const shortLabel = opt.length > 36 ? opt.substring(0, 34) + '...' : opt;
+      let shortLabel;
+      if (cfg.shortLabels && cfg.shortLabels[i]) {
+        shortLabel = cfg.shortLabels[i];
+      } else {
+        const colonIdx = opt.indexOf(':');
+        shortLabel = colonIdx > -1 ? opt.substring(0, colonIdx).trim() : (opt.length > 36 ? opt.substring(0, 34) + '...' : opt);
+      }
       return `<div class="bar-row">
         <div class="bar-label" title="${opt}">${shortLabel}</div>
         <div class="bar-track">
