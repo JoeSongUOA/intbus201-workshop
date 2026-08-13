@@ -3,42 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!--
-  ╔══════════════════════════════════════════════════════════════════════════╗
-  ║  INTBUS 201 — WORKSHOP STUDENT VIEW — REUSABLE TEMPLATE                ║
-  ║                                                                          ║
-  ║  HOW TO USE THIS FILE                                                    ║
-  ║  ─────────────────────────────────────────────────────────────────────  ║
-  ║  1. Copy this file and rename it:  workshop_student_wkNN.html            ║
-  ║  2. Fill in the WEEK_CONFIG object below. That is the ONLY section       ║
-  ║     you need to edit. Everything else — rendering, Firebase sync,        ║
-  ║     sidebar, progress tracking — is driven by the config automatically.  ║
-  ║  3. Deploy both files (student + facilitator) to GitHub Pages.           ║
-  ║  4. Embed the student URL in Canvas as an iframe.                        ║
-  ║                                                                          ║
-  ║  WEEK_CONFIG REFERENCE                                                   ║
-  ║  ─────────────────────────────────────────────────────────────────────  ║
-  ║  week          (number)  Week number, e.g. 5                             ║
-  ║  title         (string)  Case short title shown on welcome screen        ║
-  ║  caseRef       (string)  Textbook reference, e.g. "Case 2.2, pp. 90–94" ║
-  ║  firebasePath  (string)  Unique Firebase path, e.g. "sessions/week5"     ║
-  ║                          MUST differ each week — data is NOT overwritten  ║
-  ║                                                                          ║
-  ║  tasks         (array)   One object per task. Fields:                    ║
-  ║    id          (number)  Sequential 1-based integer                      ║
-  ║    section     (string)  Section label shown in the sidebar              ║
-  ║    type        (string)  "Classify" | "Argue" | "Connect"                ║
-  ║    framework   (string)  Framework label shown under the task number      ║
-  ║    question    (string)  The full task prompt shown to students           ║
-  ║    hint        (string)  Hint text shown in the grey box below question   ║
-  ║    inputs      (array)   One or more input descriptors:                   ║
-  ║      id        (string)  Unique key used for Firebase storage             ║
-  ║      kind      (string)  "choice" | "textarea"                            ║
-  ║      label     (string)  Field label shown above the input                ║
-  ║      options   (array)   Required only for kind:"choice" — the options    ║
-  ║      placeholder (str)   Required only for kind:"textarea"                ║
-  ╚══════════════════════════════════════════════════════════════════════════╝
--->
+
 <title>INTBUS 201 — Week CONFIG.week Workshop</title>
 
 <script type="module">
@@ -583,7 +548,7 @@ const WEEK_CONFIG = {
       question: 'Is Oxy\'s low-cost production capability hard to imitate? Which mechanism, causal ambiguity, social complexity, or complementary assets, best explains the barrier?',
       hint: 'Causal ambiguity = rivals cannot identify what causes the advantage. Social complexity = the advantage is embedded in invisible relationships. Complementary assets = the advantage depends on a combination of assets that only generate value together.',
       inputs: [
-        { id: 'imitate_mechanism', kind: 'choice', label: 'Which mechanism best explains the imitability barrier?', options: ['Causal ambiguity', 'Social complexity', 'Complementary Assets', 'A combination of all three'] },
+        { id: 'imitate_mechanism', kind: 'choice', label: 'Which mechanism best explains the imitability barrier?', options: ['Causal ambiguity', 'Social complexity', 'Complementary assets', 'A combination of all three'] },
         { id: 'imitate_reasoning', kind: 'textarea', label: 'Why does this mechanism apply to Oxy? Use specific case evidence.', placeholder: 'Your reasoning...' }
       ]
     },
