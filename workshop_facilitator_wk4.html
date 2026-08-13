@@ -3,43 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!--
-  ╔══════════════════════════════════════════════════════════════════════════╗
-  ║  INTBUS 201 — WORKSHOP FACILITATOR VIEW — REUSABLE TEMPLATE             ║
-  ║                                                                          ║
-  ║  HOW TO USE THIS FILE                                                    ║
-  ║  ─────────────────────────────────────────────────────────────────────  ║
-  ║  1. Copy this file and rename it:  workshop_facilitator_wkNN.html        ║
-  ║  2. Fill in the WEEK_CONFIG object below. That is the ONLY section       ║
-  ║     you need to edit. Everything else is driven by config automatically. ║
-  ║  3. Deploy to GitHub Pages (not Canvas — this is for projection only).   ║
-  ║                                                                          ║
-  ║  WEEK_CONFIG FIELDS — STUDENT FILE AND FACILITATOR FILE MUST MATCH       ║
-  ║  ─────────────────────────────────────────────────────────────────────  ║
-  ║  week, title, caseRef, firebasePath  — same values as student file       ║
-  ║                                                                          ║
-  ║  tasks — same array as the student file (copy verbatim)                  ║
-  ║                                                                          ║
-  ║  stanceConfig — determines which tasks show live stance bars in the      ║
-  ║    Debrief view. Include only tasks with genuine divergence potential.   ║
-  ║    Format per entry:                                                      ║
-  ║      taskId (number key):                                                 ║
-  ║        label   (string)  Short label shown above the bars                 ║
-  ║        field   (string)  The input id of the choice field to track        ║
-  ║        options (array)   Must match exactly the options in the task       ║
-  ║                          (copy verbatim from the tasks array)             ║
-  ║                                                                          ║
-  ║  keywordTasks — array of task ids whose first textarea feeds the         ║
-  ║    TF-IDF keyword clouds in the Debrief view. Typically Argue tasks.     ║
-  ║    Format: [ 8, 9 ]  — the field used is the first textarea in the task  ║
-  ║                                                                          ║
-  ║  finalTask — the task id whose decisive_evidence textarea is split       ║
-  ║    into three keyword clouds by final stance. Set to 0 if unused.        ║
-  ║    The final_position field of this task drives the split.               ║
-  ║    finalTaskPositions must list the options in the same order as the     ║
-  ║    task's final_position choice input.                                   ║
-  ╚══════════════════════════════════════════════════════════════════════════╝
--->
+
 <title>INTBUS 201 — Week CONFIG.week Facilitator View</title>
 
 <script type="module">
