@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>INTBUS 201 — Week CONFIG.week Workshop</title>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+  // ── Firebase credentials — do NOT change these ──────────────────────────
+  // These belong to the intbus201-workshop project and are safe to leave in
+  // client-side code (they are scoped by Firebase Security Rules).
+  const firebaseConfig = {
+    apiKey: "AIzaSyDlDsZgvBMvE58Nq2SqWSnlmgGOLVr7FCw",
+    authDomain: "intbus201-workshop.firebaseapp.com",
+    databaseURL: "https://intbus201-workshop-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "intbus201-workshop",
+    storageBucket: "intbus201-workshop.firebasestorage.app",
+    messagingSenderId: "329669630044",
+    appId: "1:329669630044:web:2f1979c7c8c4ed2f8dae99"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._db = db;
+  window._ref = ref;
+  window._set = set;
+</script>
+
+<style>
+  :root {
+    --navy: #0D2845;
+    --navy-mid: #1A4A7A;
+    --accent: #5BA8E0;
+    --green: #0A6E45;
+    --amber: #C89010;
+    --red: #B03A2E;
+    --bg: #F4F6F9;
+    --card: #FFFFFF;
+    --border: #DDE3EC;
+    --text: #1A2332;
+    --muted: #6B7A90;
+    --tag-classify: #E8F4FB;
+    --tag-classify-text: #1A5A8A;
+    --tag-argue: #FFF4E0;
+    --tag-argue-text: #8A5A00;
+    --tag-connect: #E8F5EE;
+    --tag-connect-text: #0A5A35;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--navy);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .header h1 { color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+  .header-sub { color: var(--accent); font-size: 13px; }
+  .group-badge {
+    background: var(--accent);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .progress-bar-wrap {
+    background: rgba(255,255,255,0.15);
+    height: 4px;
+    width: 100%;
+  }
+  .progress-bar-fill {
+    background: var(--accent);
+    height: 4px;
+    transition: width 0.5s ease;
+  }
+
+  /* ── WELCOME SCREEN ── */
+  #screen-welcome {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background: var(--navy);
+  }
+  .welcome-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 48px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+  }
+  .welcome-card .week-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .welcome-card h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .welcome-card .case-name {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+  .welcome-card label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .welcome-card input {
+    width: 100%;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 24px;
+  }
+  .welcome-card input:focus { border-color: var(--accent); }
+  .btn-primary {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--navy-mid); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── TASK SCREEN ── */
+  #screen-task { flex-direction: column; }
+  .task-layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: var(--navy);
+    padding: 24px 16px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .sidebar-section { margin-bottom: 24px; }
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    padding: 0 8px;
+    margin-bottom: 8px;
+  }
+  .task-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 2px;
+  }
+  .task-nav-item:hover { background: rgba(255,255,255,0.08); }
+  .task-nav-item.active { background: rgba(91,168,224,0.25); }
+  .task-nav-item.completed { opacity: 0.6; }
+  .task-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.6);
+    flex-shrink: 0;
+  }
+  .task-nav-item.completed .task-num { background: var(--green); color: #fff; }
+  .task-nav-item.active .task-num { background: var(--accent); color: #fff; }
+  .task-nav-label { font-size: 12px; color: rgba(255,255,255,0.75); line-height: 1.3; }
+  .task-nav-item.active .task-nav-label { color: #fff; font-weight: 500; }
+
+  /* Main content */
+  .task-main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 48px;
+    max-width: 800px;
+  }
+  .task-header { margin-bottom: 28px; }
+  .task-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .task-number-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .task-type-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+  }
+  .tag-classify { background: var(--tag-classify); color: var(--tag-classify-text); }
+  .tag-argue    { background: var(--tag-argue);    color: var(--tag-argue-text); }
+  .tag-connect  { background: var(--tag-connect);  color: var(--tag-connect-text); }
+  .task-framework { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .task-question {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--navy);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .task-hint {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-left: 3px solid var(--border);
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 24px;
+  }
+
+  /* Inputs */
+  .input-group { margin-bottom: 20px; }
+  .input-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .choice-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .choice-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+  }
+  .choice-option:hover { border-color: var(--accent); background: var(--tag-classify); }
+  .choice-option.selected { border-color: var(--navy); background: #EDF4FB; }
+  .choice-radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .choice-option.selected .choice-radio { border-color: var(--navy); background: var(--navy); }
+  .choice-radio-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; display: none; }
+  .choice-option.selected .choice-radio-dot { display: block; }
+  .choice-text { font-size: 14px; color: var(--text); line-height: 1.4; }
+  .choice-text-main { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .choice-text-sub { font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+  textarea {
+    width: 100%;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--text);
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+  textarea:focus { border-color: var(--accent); }
+  .char-count { font-size: 11px; color: var(--muted); text-align: right; margin-top: 4px; }
+
+  /* Task footer */
+  .task-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-secondary {
+    background: #fff;
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--navy); color: var(--navy); }
+  .btn-secondary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-submit {
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-submit:hover { background: var(--navy-mid); }
+  .btn-submit.submitted { background: var(--green); cursor: default; }
+
+  /* Locked state */
+  .locked-notice {
+    font-size: 12px;
+    color: var(--green);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: #EDF7F2;
+    border-radius: 6px;
+    border: 1px solid #B8E0CC;
+  }
+  .locked textarea { background: #F8F9FB; color: var(--muted); cursor: not-allowed; pointer-events: none; }
+  .locked .choice-option { cursor: default; pointer-events: none; }
+
+  /* ── COMPLETION SCREEN ── */
+  #screen-complete {
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background: var(--bg);
+  }
+  .complete-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 48px;
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+  }
+  .complete-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 28px;
+    color: #fff;
+  }
+  .complete-card h2 { font-size: 24px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .complete-card p { font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .summary-stat { background: var(--bg); border-radius: 10px; padding: 16px; text-align: center; }
+  .summary-stat .stat-num { font-size: 28px; font-weight: 700; color: var(--navy); }
+  .summary-stat .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: WELCOME -->
+<div id="screen-welcome" class="screen active">
+  <div class="welcome-card">
+    <div class="week-label" id="wc-week-label"></div>
+    <h2 id="wc-title"></h2>
+    <div class="case-name" id="wc-case-ref"></div>
+    <label for="group-input">Your group number or name</label>
+    <input type="text" id="group-input" placeholder="e.g. Group 4 or Batman" autocomplete="off">
+    <button class="btn-primary" id="btn-start" disabled>Start Workshop</button>
+    <p style="margin-top:24px;font-size:11px;color:var(--muted);text-align:center;line-height:1.6;border-top:1px solid var(--border);padding-top:16px;">Designed by Joe Song, University of Auckland Business School.<br>For use in INTBUS 201 only. Not for reproduction or distribution without permission.</p>
+  </div>
+</div>
+
+<!-- SCREEN 2: TASKS -->
+<div id="screen-task" class="screen">
+  <div class="header">
+    <div class="header-top">
+      <div class="header-left">
+        <h1 id="header-title"></h1>
+        <span class="header-sub" id="header-sub"></span>
+      </div>
+      <span class="group-badge" id="header-group"></span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="task-layout">
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="task-main" id="task-main"></main>
+  </div>
+</div>
+
+<!-- SCREEN 3: COMPLETE -->
+<div id="screen-complete" class="screen">
+  <div class="complete-card">
+    <div class="complete-icon">✓</div>
+    <h2>All tasks submitted</h2>
+    <p id="complete-msg"></p>
+    <div class="summary-grid" id="summary-grid"></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:24px;" id="debrief-hint"></p>
+    <button class="btn-primary" id="btn-review" style="background:var(--navy-mid);margin-bottom:12px;">Review my answers</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+//  WEEK CONFIG — EDIT THIS SECTION ONLY
+//  Copy this file, change the values below, and deploy.
+// ════════════════════════════════════════════════════════════════════════════
+const WEEK_CONFIG = {
+ 
+  week:         5,
+  title:        'Made in China',
+  caseRef:      'Integrative Case 2.2 · Peng (2023), pp. 282–283',
+  firebasePath: 'sessions/week5',
+ 
+  tasks: [
+    {
+      id: 1,
+      section: 'Why Nations Trade',
+      type: 'Classify',
+      framework: 'Resource-Based View vs. Institution-Based View',
+      question: 'Sara found that all four remaining US lamp makers used Chinese components. Which view better explains why a fully domestic lamp no longer exists?',
+      hint: 'Consider whether the explanation lies in what firms can produce efficiently, or in the trade rules that shaped the industry over time.',
+      inputs: [
+        { id: 'lamp_view', kind: 'choice', label: 'Which view explains this best?', options: ['Resource-based view: US firms lack productive capability without Chinese components', 'Institution-based view: decades of trade rules made domestic lamp production unviable'] },
+        { id: 'lamp_reasoning', kind: 'textarea', label: 'Which view does more explanatory work, and why?', placeholder: 'Your reasoning...' }
+      ]
+    },
+    {
+      id: 2,
+      section: 'Theories of International Trade',
+      type: 'Classify',
+      framework: 'Comparative Advantage / Factor Endowment Theory',
+      question: 'Sara paid $68 for Italian shoes to replace $9 Chinese ones. What does this price gap tell you about China\'s position in shoe production?',
+      hint: 'Think about which factor endowments — labour, capital, technology — make production cheaper in one country.',
+      inputs: [
+        { id: 'shoe_advantage', kind: 'choice', label: 'What best explains China\'s cost position?', options: ['Absolute advantage: China produces shoes more efficiently overall', 'Comparative advantage: China has a relative cost advantage in shoe production', 'Trade barrier effect: the gap reflects policy, not production efficiency'] },
+        { id: 'shoe_reasoning', kind: 'textarea', label: 'Which factor endowments explain China\'s cost advantage here?', placeholder: 'Your reasoning...' }
+      ]
+    },
+    {
+      id: 3,
+      section: 'Theories of International Trade',
+      type: 'Classify',
+      framework: 'Tariff Barriers vs. Non-Tariff Barriers',
+      question: 'Sara\'s rule — buying nothing labelled "Made in China" — functioned like a trade barrier. Which type does it most closely resemble?',
+      hint: 'Consider whether her rule worked through price, or through blocking access regardless of price.',
+      inputs: [
+        { id: 'barrier_type', kind: 'choice', label: 'Which barrier type fits Sara\'s rule?', options: ['Tariff barrier: raised the effective cost of Chinese goods', 'Non-tariff barrier: blocked access regardless of price', 'Voluntary import restraint: self-imposed, not externally enforced'] },
+        { id: 'barrier_reasoning', kind: 'textarea', label: 'Justify your choice and note one limitation of this analogy.', placeholder: 'Your reasoning...' }
+      ]
+    },
+    {
+      id: 4,
+      section: 'Theories of International Trade',
+      type: 'Connect',
+      framework: 'Comparative Advantage → Trade Barrier Costs',
+      question: 'Connect your Task 2 and Task 3 conclusions. What do they together reveal about the cost of restricting access to goods from a lower-cost producer?',
+      hint: 'Comparative advantage theory predicts specific welfare effects when trade is restricted. Map that prediction onto Sara\'s actual costs.',
+      inputs: [
+        { id: 'connect_2_3', kind: 'textarea', label: 'What does the connection between your Task 2 and Task 3 conclusions reveal?', placeholder: 'Your reasoning...' }
+      ]
+    },
+    {
+      id: 5,
+      section: 'Realities of International Trade',
+      type: 'Classify',
+      framework: 'Economic Arguments Against Free Trade',
+      question: 'Sara\'s experiment resembled a personal protectionist argument: buy domestic, support local production, reduce foreign dependence. Which economic argument against free trade does her motivation most closely reflect?',
+      hint: 'Review the economic arguments against free trade from this week. Think about what each argument requires to be true, and which conditions the case does or does not support.',
+      inputs: [
+        { id: 'protection_argument', kind: 'choice', label: 'Which argument fits Sara\'s motivation?', options: ['Protect domestic industries: support US producers even at higher cost', 'Infant industry: US producers could compete if given enough consumer support', 'Neither: Sara\'s motivation was personal, not an economic argument'] },
+        { id: 'protection_reasoning', kind: 'textarea', label: 'Does the case evidence support the argument Sara implicitly made?', placeholder: 'Your reasoning...' }
+      ]
+    },
+    {
+      id: 6,
+      section: 'Realities of International Trade',
+      type: 'Classify',
+      framework: 'Deadweight Cost',
+      question: 'Sara incurred several different types of additional cost during the experiment. How should they be classified using the concept of deadweight cost?',
+      hint: 'Deadweight cost refers to net losses from trade restriction that are not offset by gains to any other party.',
+      inputs: [
+        { id: 'deadweight_verdict', kind: 'choice', label: 'How should Sara\'s additional costs be classified?', options: ['Deadweight costs: welfare lost with no offsetting gain to any party', 'Transfer costs: extra spending became revenue for non-Chinese producers', 'Both apply: some are deadweight losses, some are transfers'] },
+        { id: 'deadweight_reasoning', kind: 'textarea', label: 'Which specific costs are deadweight losses, and which are transfers?', placeholder: 'Your reasoning...' }
+      ]
+    },
+    {
+      id: 7,
+      section: 'Realities of International Trade',
+      type: 'Connect',
+      framework: 'Deadweight Cost → Political Logic of Trade Barriers',
+      question: 'Connect your Task 6 conclusion to the political logic of trade barriers. If deadweight costs fall on dispersed consumers and gains go to concentrated producers, what does Sara\'s experiment reveal about why trade barriers persist?',
+      hint: 'Think about who organises political pressure for protection, and who bears the costs silently.',
+      inputs: [
+        { id: 'connect_6_7', kind: 'textarea', label: 'Who in Sara\'s case corresponds to the concentrated producer, and who to the dispersed consumer?', placeholder: 'Your reasoning...' }
+      ]
+    },
+    {
+      id: 8,
+      section: 'Debates: Gains vs. Pains from Trade',
+      type: 'Argue',
+      framework: 'Gains and Pains from Trade',
+      question: 'Sara\'s family paid significantly more for non-Chinese alternatives throughout the year. Do these costs better illustrate the gains from open trade with China, or the pains from restricting it?',
+      hint: 'Both positions draw on the same evidence. The difference lies in the interpretive frame: one emphasises what open trade provides, the other what restriction imposes.',
+      inputs: [
+        { id: 'gains_pains_position', kind: 'choice', label: 'Which position does the evidence better support?', options: ['Gains from open trade: costs reveal consumer surplus that trade normally generates', 'Pains from restriction: costs show direct welfare loss when access is removed'] },
+        { id: 'gains_pains_argument', kind: 'textarea', label: 'Defend your position using at least two specific examples from the case.', placeholder: 'Your argument...' },
+        { id: 'gains_pains_evidence', kind: 'textarea', label: 'The single most decisive piece of evidence for your position.', placeholder: 'One specific fact...' }
+      ]
+    },
+    {
+      id: 9,
+      section: 'Debates: Gains vs. Pains from Trade',
+      type: 'Argue',
+      framework: 'Trade Barriers and Comparative Advantage',
+      question: 'Coffeemakers, printer cartridges, and Halloween decorations were almost exclusively made in China with few affordable alternatives. Would you support or oppose government tariffs on such goods?',
+      hint: 'Use at least one framework from this week: deadweight cost, comparative advantage, infant industry argument, or strategic trade theory.',
+      inputs: [
+        { id: 'tariff_position', kind: 'choice', label: 'Should governments impose tariffs on these goods?', options: ['Support: reduce dependence on a single supplier and encourage domestic production', 'Oppose: tariffs impose consumer costs without changing the underlying comparative advantage'] },
+        { id: 'tariff_argument', kind: 'textarea', label: 'Defend your position using this week\'s frameworks.', placeholder: 'Your argument...' },
+        { id: 'tariff_evidence', kind: 'textarea', label: 'The single most decisive piece of evidence for your position.', placeholder: 'One specific fact...' }
+      ]
+    },
+    {
+      id: 10,
+      section: 'Debates: Gains vs. Pains from Trade',
+      type: 'Connect',
+      framework: 'Comparative Advantage + Trade Barriers + Gains and Pains from Trade',
+      question: 'Connect your Task 8 and Task 9 conclusions. What is your group\'s final position on whether governments should restrict imports of everyday goods predominantly sourced from one country?',
+      hint: 'Draw on both the consumer cost evidence from the case and the framework logic on gains and losses from trade policy.',
+      inputs: [
+        { id: 'final_position', kind: 'choice', label: 'Your group\'s final position', options: ['Impose tariffs: strategic arguments outweigh the consumer cost evidence', 'Do not impose tariffs: consumer cost evidence and comparative advantage outweigh protection arguments', 'Use non-tariff measures: subsidies impose lower deadweight costs than tariffs'] },
+        { id: 'decisive_evidence', kind: 'textarea', label: 'What single piece of evidence is most decisive, and why?', placeholder: 'Name the evidence and explain its weight...' },
+        { id: 'opposing_strength', kind: 'textarea', label: 'What is the strongest objection to your position?', placeholder: 'Acknowledge what the other side gets right...' }
+      ]
+    }
+  ]
+ 
+}; // end WEEK_CONFIG
+// ════════════════════════════════════════════════════════════════════════════
+//  END OF CONFIG — do not edit below this line
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Derived constants ──────────────────────────────────────────────────────
+const TASKS = WEEK_CONFIG.tasks;
+const TASK_COUNT = TASKS.length;
+
+// Unique section labels in insertion order
+const SECTIONS = [...new Set(TASKS.map(t => t.section))];
+
+// ── Populate static DOM from config ───────────────────────────────────────
+document.title = `INTBUS 201 — Week ${WEEK_CONFIG.week} Workshop`;
+document.getElementById('wc-week-label').textContent  = `INTBUS 201 · Week ${WEEK_CONFIG.week} Workshop`;
+document.getElementById('wc-title').textContent        = WEEK_CONFIG.title;
+document.getElementById('wc-case-ref').textContent     = WEEK_CONFIG.caseRef;
+document.getElementById('header-title').textContent    = `INTBUS 201 · Week ${WEEK_CONFIG.week} Workshop`;
+document.getElementById('header-sub').textContent      = WEEK_CONFIG.title;
+document.getElementById('complete-msg').textContent    =
+  `Your group has completed all ${TASK_COUNT} tasks. The facilitator will select responses for full-class discussion shortly.`;
+
+// Completion summary grid: count each type
+const typeCounts = {};
+TASKS.forEach(t => typeCounts[t.type] = (typeCounts[t.type] || 0) + 1);
+document.getElementById('summary-grid').innerHTML = Object.entries(typeCounts)
+  .map(([type, n]) => `<div class="summary-stat"><div class="stat-num">${n}</div><div class="stat-label">${type}</div></div>`)
+  .join('');
+
+// Debrief hint: mention the last section's highest-id tasks
+const lastSection = SECTIONS[SECTIONS.length - 1];
+const lastTasks = TASKS.filter(t => t.section === lastSection);
+const hintIds = lastTasks.slice(-3).map(t => `Task ${t.id}`).join(', ');
+document.getElementById('debrief-hint').textContent =
+  `Be ready to explain your reasoning, especially on ${hintIds}.`;
+
+// ── State ──────────────────────────────────────────────────────────────────
+let state = {
+  group: '',
+  currentTask: 0,
+  answers: {},       // taskId -> { inputs: {}, submitted: false }
+  completedCount: 0,
+  reviewMode: false
+};
+
+// ── Welcome screen ─────────────────────────────────────────────────────────
+const groupInput = document.getElementById('group-input');
+const btnStart   = document.getElementById('btn-start');
+
+groupInput.addEventListener('input', () => {
+  btnStart.disabled = groupInput.value.trim().length === 0;
+});
+groupInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !btnStart.disabled) startWorkshop();
+});
+btnStart.addEventListener('click', startWorkshop);
+
+function startWorkshop() {
+  state.group = groupInput.value.trim();
+  document.getElementById('header-group').textContent = state.group;
+  showScreen('screen-task');
+  buildSidebar();
+  renderTask(0);
+}
+
+// ── Screens ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-complete') {
+    setTimeout(() => {
+      const btn = document.getElementById('btn-review');
+      if (btn) btn.addEventListener('click', () => {
+        state.reviewMode = true;
+        showScreen('screen-task');
+        renderTask(0);
+      });
+    }, 50);
+  }
+}
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = '';
+  SECTIONS.forEach(section => {
+    const tasks = TASKS.filter(t => t.section === section);
+    const wrap  = document.createElement('div');
+    wrap.className = 'sidebar-section';
+    const label = document.createElement('div');
+    label.className = 'sidebar-section-label';
+    label.textContent = section;
+    wrap.appendChild(label);
+    tasks.forEach(task => {
+      const item = document.createElement('div');
+      item.className = 'task-nav-item';
+      item.id = `nav-${task.id}`;
+      item.innerHTML = `<div class="task-num">${task.id}</div><div class="task-nav-label">${task.type}</div>`;
+      item.addEventListener('click', () => { saveCurrentAnswers(); renderTask(task.id - 1); });
+      wrap.appendChild(item);
+    });
+    sidebar.appendChild(wrap);
+  });
+}
+
+function updateSidebar() {
+  TASKS.forEach((task, i) => {
+    const item = document.getElementById(`nav-${task.id}`);
+    if (!item) return;
+    item.classList.remove('active', 'completed');
+    if (i === state.currentTask) item.classList.add('active');
+    if (state.answers[task.id]?.submitted) item.classList.add('completed');
+  });
+}
+
+// ── Render task ────────────────────────────────────────────────────────────
+function renderTask(index) {
+  state.currentTask = index;
+  const task   = TASKS[index];
+  const main   = document.getElementById('task-main');
+  const saved  = state.answers[task.id] || { inputs: {}, submitted: false };
+  const isLocked = saved.submitted;
+
+  const typeClass = { Classify: 'tag-classify', Argue: 'tag-argue', Connect: 'tag-connect' }[task.type] || 'tag-classify';
+
+  const inputsHTML = task.inputs.map(inp => {
+    if (inp.kind === 'choice') {
+      const opts = inp.options.map(opt => {
+        const sel = saved.inputs[inp.id] === opt ? 'selected' : '';
+        const lockedAttr = isLocked ? 'style="pointer-events:none;opacity:0.75;"' : '';
+        const colonIdx = opt.indexOf(':');
+        const optMain = colonIdx > -1 ? opt.substring(0, colonIdx).trim() : opt;
+        const optSub  = colonIdx > -1 ? opt.substring(colonIdx + 1).trim() : '';
+        const optHTML = optSub
+          ? `<div class="choice-text-main">${optMain}</div><div class="choice-text-sub">${optSub}</div>`
+          : `<div class="choice-text">${optMain}</div>`;
+        return `<div class="choice-option ${sel}" data-input="${inp.id}" data-value="${opt}" ${lockedAttr}>
+          <div class="choice-radio"><div class="choice-radio-dot"></div></div>
+          <div>${optHTML}</div>
+        </div>`;
+      }).join('');
+      return `<div class="input-group">
+        <span class="input-label">${inp.label}</span>
+        <div class="choice-group">${opts}</div>
+      </div>`;
+    } else {
+      const val = saved.inputs[inp.id] || '';
+      const disabledAttr = isLocked ? 'disabled' : '';
+      const bgStyle = isLocked ? 'style="background:#F2F4F7;color:#6B7A90;cursor:not-allowed;"' : '';
+      return `<div class="input-group">
+        <span class="input-label">${inp.label}</span>
+        <textarea id="ta-${inp.id}" placeholder="${inp.placeholder}" rows="4" ${disabledAttr} ${bgStyle}>${val}</textarea>
+        ${!isLocked ? `<div class="char-count" id="cc-${inp.id}">${val.length} characters</div>` : ''}
+      </div>`;
+    }
+  }).join('');
+
+  const prevDisabled = index === 0 ? 'disabled' : '';
+  const nextLabel    = index === TASK_COUNT - 1 ? (state.reviewMode ? 'Back to summary' : 'Finish') : 'Next →';
+  const lockedNotice = isLocked ? `<div class="locked-notice">
+    <span>✓ Submitted</span>
+    <button id="btn-unsubmit" style="font-size:12px;padding:4px 12px;border:1px solid #0A6E45;background:#fff;color:#0A6E45;border-radius:5px;cursor:pointer;font-weight:600;">Unsubmit to edit</button>
+  </div>` : '';
+
+  main.innerHTML = `
+    <div class="task-header">
+      <div class="task-meta">
+        <span class="task-number-label">Task ${task.id} of ${TASK_COUNT}</span>
+        <span class="task-type-tag ${typeClass}">${task.type}</span>
+        <span class="task-framework">${task.framework}</span>
+      </div>
+      <div class="task-question">${task.question}</div>
+      <div class="task-hint">${task.hint}</div>
+    </div>
+    ${lockedNotice}
+    <div class="${isLocked ? 'locked' : ''}">${inputsHTML}</div>
+    <div class="task-footer">
+      <button class="btn-secondary" id="btn-prev" ${prevDisabled}>← Previous</button>
+      <div style="display:flex;gap:12px;align-items:center;">
+        ${!isLocked ? `<button class="btn-submit" id="btn-submit-task">Submit this task</button>` : ''}
+        <button class="btn-secondary" id="btn-next">${nextLabel}</button>
+      </div>
+    </div>
+  `;
+
+  // Textarea char counts
+  task.inputs.filter(i => i.kind === 'textarea').forEach(inp => {
+    const ta = document.getElementById(`ta-${inp.id}`);
+    const cc = document.getElementById(`cc-${inp.id}`);
+    if (ta && cc) ta.addEventListener('input', () => { cc.textContent = ta.value.length + ' characters'; });
+  });
+
+  // Unsubmit
+  const unsubmitBtn = document.getElementById('btn-unsubmit');
+  if (unsubmitBtn) {
+    unsubmitBtn.addEventListener('click', () => {
+      state.answers[task.id].submitted = false;
+      state.reviewMode = false;
+      state.completedCount = Object.values(state.answers).filter(a => a.submitted).length;
+      updateProgress();
+      syncToFirebase(task.id);
+      renderTask(index);
+    });
+  }
+
+  // Choice selection
+  if (!isLocked) {
+    main.querySelectorAll('.choice-option').forEach(el => {
+      el.addEventListener('click', () => {
+        const inputId = el.dataset.input;
+        main.querySelectorAll(`.choice-option[data-input="${inputId}"]`).forEach(o => o.classList.remove('selected'));
+        el.classList.add('selected');
+      });
+    });
+  }
+
+  // Submit
+  const submitBtn = document.getElementById('btn-submit-task');
+  if (submitBtn) submitBtn.addEventListener('click', () => { if (!isLocked) submitTask(task.id); });
+
+  // Prev / Next
+  const btnPrev = document.getElementById('btn-prev');
+  if (btnPrev) btnPrev.addEventListener('click', () => { if (!isLocked) saveCurrentAnswers(); if (index > 0) renderTask(index - 1); });
+
+  document.getElementById('btn-next').addEventListener('click', () => {
+    if (!isLocked) saveCurrentAnswers();
+    if (index < TASK_COUNT - 1) { renderTask(index + 1); }
+    else { state.reviewMode = false; showScreen('screen-complete'); }
+  });
+
+  updateSidebar();
+  updateProgress();
+  main.scrollTop = 0;
+}
+
+// ── Save / submit ──────────────────────────────────────────────────────────
+function saveCurrentAnswers() {
+  const task = TASKS[state.currentTask];
+  const inputs = {};
+  task.inputs.forEach(inp => {
+    if (inp.kind === 'textarea') {
+      const ta = document.getElementById(`ta-${inp.id}`);
+      if (ta) inputs[inp.id] = ta.value;
+    } else {
+      const sel = document.querySelector(`.choice-option.selected[data-input="${inp.id}"]`);
+      if (sel) inputs[inp.id] = sel.dataset.value;
+    }
+  });
+  if (!state.answers[task.id]) state.answers[task.id] = { inputs: {}, submitted: false };
+  state.answers[task.id].inputs = inputs;
+}
+
+function submitTask(taskId) {
+  saveCurrentAnswers();
+  if (!state.answers[taskId]) state.answers[taskId] = { inputs: {}, submitted: false };
+  state.answers[taskId].submitted = true;
+  state.completedCount = Object.values(state.answers).filter(a => a.submitted).length;
+  updateSidebar();
+  updateProgress();
+  syncToFirebase(taskId);
+  renderTask(state.currentTask);
+}
+
+// ── Firebase sync ──────────────────────────────────────────────────────────
+function syncToFirebase(taskId) {
+  if (!window._db || !state.group) return;
+  const groupKey = state.group.replace(/[^a-zA-Z0-9]/g, '_');
+  const task = TASKS[taskId - 1];
+  const ans  = state.answers[taskId];
+  if (!ans) return;
+  const payload = {
+    group:          state.group,
+    taskId:         taskId,
+    taskType:       task.type,
+    taskSection:    task.section,
+    submitted:      ans.submitted,
+    inputs:         ans.inputs,
+    completedCount: state.completedCount,
+    timestamp:      Date.now()
+  };
+  window._set(window._ref(window._db, `${WEEK_CONFIG.firebasePath}/${groupKey}/tasks/${taskId}`), payload);
+  window._set(window._ref(window._db, `${WEEK_CONFIG.firebasePath}/${groupKey}/summary`), {
+    group:          state.group,
+    completedCount: state.completedCount,
+    lastUpdate:     Date.now()
+  });
+}
+
+function updateProgress() {
+  const pct = (state.completedCount / TASK_COUNT) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+</script>
+</body>
+</html>
