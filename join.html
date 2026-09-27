@@ -91,6 +91,20 @@ textarea{width:100%;min-height:96px;border:1.5px solid var(--rule);border-radius
 .stampbig{border:3px solid var(--stamp);color:var(--stamp);padding:8px 14px 7px;border-radius:6px;font-weight:900;font-stretch:118%;letter-spacing:.04em;text-transform:uppercase;font-size:20px;transform:rotate(-6deg);animation:st .4s cubic-bezier(.3,1.5,.5,1) both;white-space:nowrap}
 .stampbig.miss{border-color:var(--ink3);color:var(--ink2)}
 @keyframes st{0%{opacity:0;transform:rotate(-6deg) scale(1.8)}100%{opacity:1;transform:rotate(-6deg) scale(1)}}
+.clist{display:flex;flex-direction:column;gap:6px;margin:12px 0 4px}
+.clue1{background:var(--paper);border-radius:6px;padding:10px 12px;font-size:15px;line-height:1.35;border-left:4px solid var(--stamp)}
+.clue1 b{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--stamp)}
+.lock{margin-top:12px;font-size:15px;font-weight:800;color:var(--stamp)}
+.cr{background:var(--paper);border-radius:6px;padding:12px;margin-top:10px}
+.cr .it{font-size:16px;font-weight:700;margin-bottom:8px}
+.cr .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cr button{min-height:48px;border:0;border-radius:6px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--rule);font-size:14px;font-weight:700;padding:6px}
+.cr button.sel{box-shadow:inset 0 0 0 3px var(--team);background:#fafafa}
+.stakes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stakes button{min-height:52px;border:0;border-radius:6px;background:var(--paper);font-size:20px;font-weight:900}
+.stakes button.sel{background:var(--team);color:#fff}
+.ends{display:flex;justify-content:space-between;font-size:13px;color:var(--ink2);gap:10px}
+.ends span:last-child{text-align:right}
 .err{border-left:4px solid var(--bad)}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -192,6 +206,7 @@ function setTeam(){
   const me = $("#me"); me.innerHTML = "";
   if (t) me.append(iconEl(t.icon, 16, t.colour), t.name);
 }
+function clueIdx(){ const st = S.state||{}, cur = S.current||{}; return Math.max(0, Math.min((cur.clues||[]).length-1, Math.floor((B.now() - (st.openedAt||0))/((cur.every||15)*1000)))); }
 function isOpen(){ const st = S.state||{}; return st.status === "open" && B.now() < (st.openedAt||0) + (st.duration||0)*1000; }
 function view(){
   if (!S.meta) return "wait";
@@ -219,8 +234,26 @@ function standing(p){
   st.append(a, c); p.append(st);
 }
 function vWait(app){ const p = h("div","panel"); p.append(h("h1",null,"Waiting for the lecture to start"), h("p","lead","Keep this page open. It updates by itself.")); app.append(p); }
+function drawTeam(btn){
+  btn.disabled = true; btn.textContent = "Drawing…"; let done = false;
+  const off = B.on("players", pl => {
+    if (done) return; done = true; if (typeof off === "function") setTimeout(off, 0);
+    const teams = S.meta.teams || [], cnt = {}; teams.forEach(t => cnt[t.id] = 0);
+    Object.values(pl || {}).forEach(p => { if (p && cnt[p.team] != null) cnt[p.team]++; });
+    const min = Math.min(...teams.map(t => cnt[t.id])), pool = teams.filter(t => cnt[t.id] === min);
+    const t = pool[Math.floor(Math.random()*pool.length)];
+    B.set("players/" + pid, { team:t.id, t:B.now() });
+  });
+}
 function vPick(app){
   const p = h("div","panel");
+  if (S.meta.assign === "random"){
+    p.append(h("h1",null,S.meta.groupTitle || "Draw your group"), h("p","lead",S.meta.groupHelp || "The app assigns your group for the whole lecture."));
+    const btn = h("button","send","Draw"); btn.style.marginTop = "18px"; btn.onclick = () => drawTeam(btn);
+    const list = h("div","teams");
+    (S.meta.teams||[]).forEach(t => { const r = h("div","tb"); r.style.borderLeftColor = t.colour; r.style.cursor = "default"; const d = h("div"); const nm = h("b",null,t.name); nm.style.color = t.colour; d.append(nm, h("span","h",t.hint||"")); r.append(iconEl(t.icon, 36, t.colour), d); list.append(r); });
+    p.append(btn, list); app.append(p); return;
+  }
   p.append(h("h1",null,S.meta.groupTitle || "Choose your delegation"), h("p","lead",S.meta.groupHelp || "You keep it for the whole lecture."));
   const list = h("div","teams");
   (S.meta.teams||[]).forEach(t => {
@@ -236,6 +269,7 @@ function vIdle(app){
   const p = h("div","panel"), lk = h("div","look");
   const scr = h("span"); scr.innerHTML = '<svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="3" y="8" width="38" height="24" rx="3" stroke="#11263A" stroke-width="2.5"/><path d="M16 38h12M22 32v6" stroke="#11263A" stroke-width="2.5" stroke-linecap="round"/></svg>';
   const tx = h("div"); tx.append(h("h1",null,"Eyes on the big screen"), h("p","lead","Questions appear here when answers open."));
+  if (S.meta && S.meta.assign === "random" && teamOf(myTeam())){ const t = teamOf(myTeam()), yb = h("div","tb"); yb.style.borderLeftColor = t.colour; yb.style.marginTop = "16px"; const d = h("div"); const nm = h("b",null,`You represent ${t.name}`); nm.style.color = t.colour; d.append(nm, h("span","h",t.hint||"")); yb.append(iconEl(t.icon, 36, t.colour), d); p.append(yb); }
   lk.append(scr.firstChild, tx); p.append(lk); standing(p); app.append(p);
 }
 
@@ -243,7 +277,7 @@ function vIdle(app){
 let A = {};
 function save(v){ if (!isOpen()) return; S.mine = v; B.set(`answers/${S.current.id}/${pid}`, v); paintAnswer(); }
 function vAnswer(app){
-  const cur = S.current, p = h("div","panel"); A = { kind:cur.kind };
+  const cur = S.current, p = h("div","panel"); A = { kind: cur.kind === "match" ? "classify" : (cur.kind === "order" ? "rank" : cur.kind), src: cur.kind };
   const tm = h("div","timer"); tm.append(h("div")); p.append(tm);
   if (cur.kind === "text"){
     const sd = (cur.sides||[]).find(s => s.teams.includes(myTeam()));
@@ -262,6 +296,30 @@ function vAnswer(app){
     p.append(evs, s2, ta, cnt, send, why, h("p","saved")); Object.assign(A, { ta, cnt, send, why });
   } else {
     p.append(h("div","q",cur.prompt));
+    if (cur.kind === "clue"){
+      A.clist = h("div","clist"); p.append(A.clist);
+      const o = h("div","opts"); A.btns = [];
+      cur.options.forEach((txt,i) => { const b = h("button","ob"); b.append(h("span","L",L(i)), h("span","T",txt)); b.onclick = () => { if (S.mine != null) return; const c = clueIdx(); save({ k:i, c }); }; o.append(b); A.btns.push(b); });
+      A.lock = h("div","lock"); p.append(o, A.lock);
+    }
+    if (cur.kind === "classify" || cur.kind === "match"){
+      A.vals = Array.isArray(S.mine) ? S.mine.slice() : cur.items.map(() => -1); A.rows = [];
+      cur.items.forEach((it,i) => { const r = h("div","cr"); r.append(h("div","it",it)); const two = h("div","two"); const bs = cur.cats.map((c,j) => { const b = h("button",null,c); b.onclick = () => { A.vals[i] = j; save(A.vals.slice()); }; two.append(b); return b; }); r.append(two); p.append(r); A.rows.push(bs); });
+    }
+    if (cur.kind === "wager"){
+      const o = h("div","opts"); A.btns = []; A.pick = S.mine ? S.mine.k : null; A.stake = S.mine ? S.mine.s : 1;
+      cur.options.forEach((txt,i) => { const b = h("button","ob"); b.append(h("span","L",L(i)), h("span","T",txt)); b.onclick = () => { A.pick = i; save({ k:A.pick, s:A.stake }); }; o.append(b); A.btns.push(b); });
+      const lab = h("p","lead","Your stake"); lab.style.marginTop = "16px";
+      const sk = h("div","stakes"); A.sbtn = [1,2,3].map(v => { const b = h("button",null,`×${v}`); b.onclick = () => { A.stake = v; if (A.pick != null) save({ k:A.pick, s:A.stake }); else paintAnswer(); }; sk.append(b); return b; });
+      const rule = h("p","lead",`Right: +${cur.points} × stake. Wrong: −${cur.penalty} × stake.`);
+      p.append(o, lab, sk, rule);
+    }
+    if (cur.kind === "scale"){
+      const w = h("div","num"); const read = h("div","read"); const rng = h("input"); rng.type = "range"; rng.min = 0; rng.max = 10; rng.step = 1; rng.value = typeof S.mine === "number" ? S.mine : 5;
+      const ends = h("div","ends"); ends.append(h("span",null,`0: ${cur.left}`), h("span",null,`10: ${cur.right}`));
+      let tmo = null; rng.oninput = () => { A.local = +rng.value; paintAnswer(); clearTimeout(tmo); tmo = setTimeout(() => save(A.local), 250); };
+      w.append(read, rng, ends); p.append(w); Object.assign(A, { read, unit:"", local:null });
+    }
     if (cur.kind === "choice" || cur.kind === "poll"){
       const o = h("div","opts"); A.btns = [];
       cur.options.forEach((txt,i) => { const b = h("button","ob"); b.append(h("span","L",L(i)), h("span","T",txt)); b.onclick = () => save(i); o.append(b); A.btns.push(b); });
@@ -273,11 +331,12 @@ function vAnswer(app){
       if (!(cur.items||[]).length) o.append(h("p","lead","No arguments were shortlisted."));
       p.append(o);
     }
-    if (cur.kind === "rank"){
+    if (cur.kind === "rank" || cur.kind === "order"){
       const o = h("div","opts"); A.btns = []; A.order = Array.isArray(S.mine) ? S.mine.slice() : [];
       cur.options.forEach((txt,i) => { const b = h("button","ob"); b.append(h("span","L",""), h("span","T",txt)); b.onclick = () => {
         if (!isOpen()) return;
         const ix = A.order.indexOf(i); if (ix >= 0) A.order.splice(ix); else A.order.push(i);
+        if (A.src === "order" && A.order.length === cur.options.length - 1) A.order.push(cur.options.findIndex((_,k) => !A.order.includes(k)));
         if (A.order.length === cur.options.length) save(A.order.slice()); else paintAnswer();
       }; o.append(b); A.btns.push(b); });
       p.append(o);
@@ -312,7 +371,11 @@ function paintAnswer(){
   const cur = S.current; if (!cur || !A.kind) return;
   const sv = document.querySelector(".saved"), open = isOpen();
   if (A.kind === "choice" || A.kind === "poll" || A.kind === "vote"){ (A.btns||[]).forEach((b,i) => b.classList.toggle("sel", S.mine === i)); if (sv) sv.textContent = S.mine != null ? "Answer saved. You can change it until time runs out." : "Tap an answer."; }
-  if (A.kind === "rank"){ const done = Array.isArray(S.mine) && S.mine.length === cur.options.length && A.order.length === cur.options.length; (A.btns||[]).forEach((b,i) => { const k = A.order.indexOf(i); b.classList.toggle("sel", k >= 0); b.querySelector(".L").textContent = k >= 0 ? String(k+1) : ""; }); if (sv) sv.textContent = done ? "Ranking saved. Tap an item to redo the order from that point." : "Tap the factors in order, most important first."; }
+  if (A.kind === "clue"){ const n = clueIdx(); A.clist.innerHTML = ""; (cur.clues||[]).slice(0, n+1).forEach((c,i) => { const d = h("div","clue1"); d.append(h("b",null,`Clue ${i+1}`), c); A.clist.append(d); }); const m = S.mine; (A.btns||[]).forEach((b,i) => { b.classList.toggle("sel", m && m.k === i); b.disabled = !!m; }); A.lock.textContent = m ? `Locked in at clue ${m.c+1}: worth ${cur.points[m.c]} points if correct.` : `Lock in now for ${cur.points[n]} points, or wait for another clue.`; if (sv) sv.textContent = ""; }
+  if (A.kind === "classify"){ A.rows.forEach((bs,i) => bs.forEach((b,j) => b.classList.toggle("sel", A.vals[i] === j))); const done = A.vals.filter(v => v >= 0).length; if (sv) sv.textContent = `${done} of ${A.vals.length} ${A.src === "match" ? "matched" : "sorted"}. Saved as you go.`; }
+  if (A.kind === "wager"){ (A.btns||[]).forEach((b,i) => b.classList.toggle("sel", A.pick === i)); A.sbtn.forEach((b,i) => b.classList.toggle("sel", A.stake === i+1)); if (sv) sv.textContent = A.pick != null ? `Saved: ${L(A.pick)} at ×${A.stake}. You can change it until time runs out.` : "Pick an answer and a stake."; }
+  if (A.kind === "scale"){ const v = A.local != null ? A.local : S.mine; A.read.textContent = typeof v === "number" ? String(v) : "Move the slider"; A.read.classList.toggle("none", typeof v !== "number"); if (sv) sv.textContent = typeof S.mine === "number" ? "Saved. No points for this one." : ""; }
+  if (A.kind === "rank"){ const done = Array.isArray(S.mine) && S.mine.length === cur.options.length && A.order.length === cur.options.length; (A.btns||[]).forEach((b,i) => { const k = A.order.indexOf(i); b.classList.toggle("sel", k >= 0); b.querySelector(".L").textContent = k >= 0 ? String(k+1) : ""; }); if (sv) sv.textContent = A.src === "order" ? (done ? "Order saved. Tap an item to redo the order from that point." : "Tap the items in order, first to last.") : (done ? "Ranking saved. Tap an item to redo the order from that point." : "Tap the factors in order, most important first."); }
   if (A.kind === "number"){ const v = A.local != null ? A.local : S.mine, has = typeof v === "number"; A.read.textContent = has ? v + A.unit : "Move the slider"; A.read.classList.toggle("none", !has); if (sv) sv.textContent = typeof S.mine === "number" ? "Estimate saved. You can adjust it until time runs out." : ""; }
   if (A.kind === "alloc"){ const used = A.vals.reduce((a,b) => a+b, 0); A.rows.forEach((r,i) => { r.v.textContent = A.vals[i]; r.mn.disabled = A.vals[i] <= 0; r.pl.disabled = used >= A.budget; }); A.left.textContent = used === A.budget ? `All ${A.budget} points placed.` : `${A.budget - used} points left to place`; if (sv) sv.textContent = used ? "Your split is saved as you go." : ""; }
   if (A.kind === "text"){ A.evb.forEach((b,i) => b.classList.toggle("sel", draft.ev === i)); A.cnt.textContent = `${draft.text.length}/${cur.maxLen||160}`; const m = S.mine; const same = m && m.ev === draft.ev && m.text === draft.text.trim(); A.send.disabled = draft.ev == null || !draft.text.trim() || !open || same; A.send.textContent = same ? "Submitted" : (m ? "Update argument" : "Submit argument"); A.why.textContent = !open ? "Time is up." : (draft.ev == null ? "Tap a piece of evidence in step 1 first." : (!draft.text.trim() ? "Write your sentence in step 2." : "")); if (sv) sv.textContent = m ? "Your argument is in. You can still edit it and tap Update until time runs out. The lecturer shortlists arguments for the vote." : ""; }
@@ -320,7 +383,8 @@ function paintAnswer(){
 function vClosed(app){
   const cur = S.current, p = h("div","panel"), had = S.mine != null;
   p.append(h("h1",null,"Answers closed"));
-  const msg = { choice:`You chose ${had ? L(S.mine) : ""}.`, poll:`You chose ${had ? L(S.mine) : ""}.`, vote:`You voted for argument ${had ? S.mine+1 : ""}.`, number:`Your estimate: ${S.mine}${cur.unit||""}.`, alloc:"Your split is locked in.", rank:"Your ranking is locked in.", text:"Your argument is in." }[cur.kind];
+  const msg = { clue: had ? `You locked in ${L(S.mine.k)} at clue ${S.mine.c+1}.` : "", wager: had ? `You chose ${L(S.mine.k)} at ×${S.mine.s||1}.` : "", classify:"Your sorting is locked in.", match:"Your matches are locked in.", order:"Your order is locked in.", scale: had ? `You chose ${S.mine}.` : "",
+    choice:`You chose ${had ? L(S.mine) : ""}.`, poll:`You chose ${had ? L(S.mine) : ""}.`, vote:`You voted for argument ${had ? S.mine+1 : ""}.`, number:`Your estimate: ${S.mine}${cur.unit||""}.`, alloc:"Your split is locked in.", rank:"Your ranking is locked in.", text:"Your argument is in." }[cur.kind];
   p.append(h("p","lead", had ? msg + " Results are on the big screen." : "You did not answer this one. The next question opens soon."));
   app.append(p);
 }
@@ -329,12 +393,16 @@ function vResult(app){
   if (!rv){ p.append(h("h1",null,"Revealing…")); app.append(p); return; }
   const got = Math.round((S.points||{})[cur.id] || 0), had = S.mine != null;
   const r = h("div","result");
-  r.append(h("div","stampbig" + (got ? "" : " miss"), got ? `+${got} points` : (had ? (cur.kind === "vote" ? "Vote counted" : "No points this time") : "No answer")));
+  r.append(h("div","stampbig" + (got > 0 ? "" : " miss"), got > 0 ? `+${got} points` : (got < 0 ? `${got} points` : (had ? (cur.kind === "vote" ? "Vote counted" : "No points this time") : "No answer"))));
   p.append(r);
   if (cur.kind === "choice"){
     p.append(h("p","lead", `The answer is ${L(rv.correct)}.`));
     const o = h("div","opts"); cur.options.forEach((t,i) => { const b = h("button","ob" + (i === rv.correct ? " ok" : (i === S.mine ? " sel dim" : " dim"))); b.disabled = true; b.append(h("span","L",L(i)), h("span","T",t)); o.append(b); }); p.append(o);
   }
+  if (cur.kind === "clue" || cur.kind === "wager") p.append(h("p","lead", `The answer is ${L(rv.correct)}. ${cur.options[rv.correct]}.`));
+  if (cur.kind === "classify") p.append(h("p","lead", `Correct groups: ${cur.items.map((it,i) => `${it}: ${cur.cats[rv.key[i]]}`).join("; ")}.`));
+  if (cur.kind === "match") p.append(h("p","lead", `Correct matches: ${cur.items.map((it,i) => `${it}: ${cur.cats[rv.key[i]]}`).join("; ")}.`));
+  if (cur.kind === "order") p.append(h("p","lead", `Correct order: ${rv.key.map((ix,p) => `${p+1}. ${cur.options[ix]}`).join("  ")}.`));
   if (cur.kind === "number") p.append(h("p","lead", `Answer: ${rv.label}. Your estimate: ${had ? S.mine + (cur.unit||"") : "none"}.`));
   if (cur.kind === "alloc") p.append(h("p","lead", `Best supported: ${L(rv.key)}. You placed ${had ? (S.mine[rv.key]||0) : 0} of 10 points there.`));
   if (cur.kind === "vote") p.append(h("p","lead", "The winning arguments are on the big screen. Points go to the delegations that wrote them."));
@@ -345,6 +413,7 @@ function tick(){
   const st = S.state||{}; const dur = (st.duration||20)*1000; const left = Math.max(0, (st.openedAt||0) + dur - B.now());
   tm.style.transform = `scaleX(${left/dur})`;
   if (left <= 0) document.querySelectorAll(".panel button, .panel textarea, .panel input").forEach(b => b.disabled = true);
+  if (A.kind === "clue" && view() === "answer" && Date.now() % 1000 < 110) paintAnswer();
 }
 (async function(){
   try { B = await createBackend("lecture/" + SID, DEMO); }
